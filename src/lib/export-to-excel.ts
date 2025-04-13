@@ -1,4 +1,4 @@
-import { read, writeFileXLSX } from "xlsx";
+import { read, write } from "xlsx";
 import { saveAs } from "file-saver";
 
 interface CreativeData {
@@ -10,7 +10,7 @@ interface CreativeData {
 }
 
 export async function exportToExcel(data: CreativeData[]) {
-  // Fetch the exact unmodified TTD template
+  // Load original TTD template
   const response = await fetch("/bulkcreativeimporttemplate.v34__6__copy.xlsx");
   const arrayBuffer = await response.arrayBuffer();
 
@@ -29,10 +29,16 @@ export async function exportToExcel(data: CreativeData[]) {
     sheet[`E${row}`] = { t: "s", v: item.landingPage };
   });
 
-  // Create a binary array of the updated workbook
-  const updated = writeFileXLSX(workbook, null, { bookType: "xlsx", type: "array" });
+  // Generate binary workbook output
+  const wbout = write(workbook, {
+    bookType: "xlsx",
+    type: "array",
+    compression: true,
+  });
 
-  // Create and download the final Blob
-  const blob = new Blob([updated], { type: "application/octet-stream" });
+  const blob = new Blob([wbout], {
+    type: "application/octet-stream",
+  });
+
   saveAs(blob, `Hosted_Display_Export_${Date.now()}.xlsx`);
 }
