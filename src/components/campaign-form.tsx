@@ -49,7 +49,7 @@ export default function CampaignForm() {
 
   const validateUrls = async (filesList: File[], useRemoveTerm: boolean) => {
     const updated = await Promise.all(
-      filesList.map(async (_) => {
+      filesList.map(async (_, i) => {
         const url = buildCTURL(landingPage, campaignId, useRemoveTerm);
         try {
           await fetch(url, { method: "HEAD", mode: "no-cors" });
