@@ -1,4 +1,4 @@
-import { read, utils, write, WorkBook } from "xlsx";
+import { read, writeFile, utils } from "xlsx";
 import { saveAs } from "file-saver";
 
 interface CreativeData {
@@ -10,24 +10,33 @@ interface CreativeData {
 }
 
 export async function exportToExcel(data: CreativeData[]) {
-  const res = await fetch("/template.xlsx");
-  const buffer = await res.arrayBuffer();
+  // Load exact TTD template from /public
+  const response = await fetch("/bulkcreativeimporttemplate.v34__6__copy.xlsx");
+  const arrayBuffer = await response.arrayBuffer();
 
-  const workbook: WorkBook = read(buffer, { type: "buffer" });
-  const sheet = workbook.Sheets["Hosted Display"];
+  // Read the template without altering sheet names or formatting
+  const workbook = read(arrayBuffer, { type: "buffer", cellStyles: true });
 
-  // Convert incoming data to a 2D array format for easy AOA injection
-  const rows = data.map((entry) => {
-    const baseName = entry.file.name.split(".")[0];
-    const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
-    return [creativeName, "", entry.file.name, entry.cturl, entry.landingPage];
+  const sheetName = "Hosted Display";
+  const ws = workbook.Sheets[sheetName];
+
+  const startRow = 2;
+  data.forEach((item, i) => {
+    const row = startRow + i;
+    const baseName = item.file.name.split(".")[0];
+    const creativeName = `${baseName}_${item.campaignId}_${item.date}`;
+
+    ws[`A${row}`] = { t: "s", v: creativeName };
+    ws[`C${row}`] = { t: "s", v: item.file.name };
+    ws[`D${row}`] = { t: "s", v: item.cturl };
+    ws[`E${row}`] = { t: "s", v: item.landingPage };
   });
 
-  // Inject into sheet starting at A2
-  utils.sheet_add_aoa(sheet, rows, { origin: "A2" });
+  const wbout = utils.book_new();
+  utils.book_append_sheet(wbout, ws, sheetName);
 
   const blob = new Blob(
-    [write(workbook, { type: "array", bookType: "xlsx" })],
+    [writeFile(wbout, { bookType: "xlsx", type: "binary", bookSST: false })],
     { type: "application/octet-stream" }
   );
 
