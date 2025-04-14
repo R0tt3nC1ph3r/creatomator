@@ -1,6 +1,7 @@
+// src/lib/export-to-zip.ts
 import JSZip from "jszip";
+import { read, utils, write } from "xlsx";
 import { saveAs } from "file-saver";
-import { read, utils, writeFile, WorkBook } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -11,36 +12,35 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const templateArrayBuffer = await templateFile.arrayBuffer();
-  const workbook: WorkBook = read(templateArrayBuffer, { type: "array" });
-  const sheet = workbook.Sheets["Hosted Display"];
+  const zip = new JSZip();
 
+  // Read and clone the uploaded template
+  const arrayBuffer = await templateFile.arrayBuffer();
+  const workbook = read(arrayBuffer, { type: "buffer" });
+
+  const ws = workbook.Sheets["Hosted Display"];
   const startRow = 2;
+
   data.forEach((entry, i) => {
     const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
     const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
 
-    sheet[`A${row}`] = { t: "s", v: creativeName }; // Creative Name
-    sheet[`C${row}`] = { t: "s", v: entry.file.name }; // File Name
-    sheet[`D${row}`] = { t: "s", v: entry.cturl }; // CTURL
-    sheet[`E${row}`] = { t: "s", v: entry.landingPage }; // Landing Page
+    ws[`A${row}`] = { t: "s", v: creativeName };
+    ws[`C${row}`] = { t: "s", v: entry.file.name };
+    ws[`D${row}`] = { t: "s", v: entry.cturl };
+    ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // Write the updated workbook to binary
-  const workbookBuffer = writeFile(workbook, {
-    bookType: "xlsx",
-    type: "buffer",
-  } as any);
+  // Write updated workbook
+  const buffer = write(workbook, { bookType: "xlsx", type: "array" });
+  zip.file(templateFile.name, buffer);
 
-  const zip = new JSZip();
-  zip.file("bulkcreativeimporttemplate.v34__6__copy.xlsx", workbookBuffer);
+  // Add creatives
+  data.forEach(({ file }) => {
+    zip.file(file.name, file);
+  });
 
-  // Add each creative file to the root of the zip
-  for (const creative of data) {
-    zip.file(creative.file.name, creative.file);
-  }
-
-  const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `CreatomatorExport_${Date.now()}.zip`);
+  const blob = await zip.generateAsync({ type: "blob" });
+  saveAs(blob, `CreatomatorExport_${Date.now()}.zip`);
 }

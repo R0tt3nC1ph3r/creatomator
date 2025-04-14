@@ -5,7 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
 import { exportToZip } from "@/lib/export-to-zip";
 
@@ -100,7 +106,8 @@ export default function CampaignForm() {
     setShowSummary(true);
   };
 
-  const confirmExport = () => {
+  const confirmExport = async () => {
+    if (!templateFile) return;
     const data = files.map((file, index) => ({
       file,
       campaignId,
@@ -108,7 +115,7 @@ export default function CampaignForm() {
       landingPage,
       date: today,
     }));
-    exportToZip(data, templateFile as File);
+    await exportToZip(data, templateFile);
     setShowSummary(false);
   };
 
