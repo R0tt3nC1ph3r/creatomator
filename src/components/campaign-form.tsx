@@ -5,13 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
 import { exportToZip } from "@/lib/export-to-zip";
 
@@ -29,6 +23,7 @@ export default function CampaignForm() {
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const templateInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -81,8 +76,8 @@ export default function CampaignForm() {
     await processFiles(fileList);
   };
 
-  const handleTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
+  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
     setTemplateFile(file);
   };
 
@@ -98,19 +93,14 @@ export default function CampaignForm() {
   };
 
   const handleExport = () => {
-    if (!files.length || !campaignId || !landingPage) {
-      alert("Please upload creatives and complete all fields.");
+    if (!files.length || !campaignId || !landingPage || !templateFile) {
+      alert("Please complete all fields and upload files/template.");
       return;
     }
     setShowSummary(true);
   };
 
   const confirmExport = () => {
-    if (!templateFile) {
-      alert("Please upload a template file.");
-      return;
-    }
-
     const data = files.map((file, index) => ({
       file,
       campaignId,
@@ -118,8 +108,7 @@ export default function CampaignForm() {
       landingPage,
       date: today,
     }));
-
-    exportToZip(data, templateFile);
+    exportToZip(data, templateFile as File);
     setShowSummary(false);
   };
 
@@ -159,19 +148,13 @@ export default function CampaignForm() {
             className="mt-1 relative border-2 border-dashed border-gray-300 bg-white p-6 rounded-md text-center cursor-pointer hover:border-gray-400"
           >
             <p className="text-gray-500">Drag & drop files here or click to select</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
           </div>
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload Template</Label>
-          <Input type="file" onChange={handleTemplateChange} ref={templateInputRef} />
+          <Label className="text-gray-600">Upload TTD Template</Label>
+          <Input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} />
         </div>
 
         <div className="flex items-center gap-3">
