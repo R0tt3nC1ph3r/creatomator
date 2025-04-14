@@ -1,6 +1,6 @@
-import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, write } from "xlsx";
+import JSZip from "jszip";
+import { read, utils, writeFileXLSX } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -10,41 +10,42 @@ interface CreativeData {
   date: string;
 }
 
-export async function exportToZip(data: CreativeData[]) {
-  const zip = new JSZip();
+export async function exportToZip(data: CreativeData[], templateFile: File) {
+  // Read the uploaded Excel template
+  const arrayBuffer = await templateFile.arrayBuffer();
+  const workbook = read(arrayBuffer, { type: "buffer" });
 
-  const campaignId = data[0]?.campaignId || "Export";
-  const folder = zip.folder(`Creatomator_${campaignId}`);
-  const assets = folder?.folder("assets");
+  // Use the "Hosted Display" tab only
+  const ws = workbook.Sheets["Hosted Display"];
+  const startRow = 2;
 
-  // Load template
-  const template = await fetch("/template.xlsx").then((res) => res.arrayBuffer());
-  const workbook = read(template, { type: "buffer" });
-  const sheet = workbook.Sheets["Hosted Display"];
-
-  // Fill in data rows
-  const rows = data.map((entry) => {
+  data.forEach((entry, i) => {
+    const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
     const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
-    return [creativeName, "", entry.file.name, entry.cturl, entry.landingPage];
+
+    ws[`A${row}`] = { t: "s", v: creativeName };
+    ws[`C${row}`] = { t: "s", v: entry.file.name };
+    ws[`D${row}`] = { t: "s", v: entry.cturl };
+    ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  utils.sheet_add_aoa(sheet, rows, { origin: "A2" });
+  // Export updated Excel file as Blob
+  const updatedXLSXBlob = writeFileXLSX(workbook, {
+    bookType: "xlsx",
+    type: "blob",
+  });
 
-  const excelBlob = new Blob(
-    [write(workbook, { type: "array", bookType: "xlsx" })],
-    {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }
-  );
+  // Create ZIP file
+  const zip = new JSZip();
+  zip.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
 
-  folder?.file("Hosted_Display_Export.xlsx", excelBlob);
-
+  // Add each creative to the ZIP
   for (const entry of data) {
-    const arrayBuffer = await entry.file.arrayBuffer();
-    assets?.file(entry.file.name, arrayBuffer);
+    zip.file(entry.file.name, entry.file);
   }
 
-  const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `Creatomator_${campaignId}_${Date.now()}.zip`);
+  // Finalize ZIP and download
+  const finalZip = await zip.generateAsync({ type: "blob" });
+  saveAs(finalZip, `CreatomatorExport_${Date.now()}.zip`);
 }
