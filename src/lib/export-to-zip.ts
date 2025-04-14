@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, writeFile, WorkBook } from "xlsx";
+import { read, utils, writeFile } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -12,63 +12,52 @@ interface CreativeData {
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
   try {
-    // Step 1: Read uploaded template workbook as binary
+    // Step 1: Load the uploaded Excel template
     const arrayBuffer = await templateFile.arrayBuffer();
-    const workbook: WorkBook = read(arrayBuffer, { type: "array" });
-
+    const workbook = read(arrayBuffer);
     const sheetName = "Hosted Display";
     const sheet = workbook.Sheets[sheetName];
-    if (!sheet) throw new Error("Hosted Display sheet not found");
 
-    // Convert sheet to JSON to determine headers
-    const json = utils.sheet_to_json(sheet, { header: 1 }) as string[][];
-    const headers = json[0];
+    if (!sheet) throw new Error(`Sheet "${sheetName}" not found in template.`);
 
-    // Step 2: Inject new creative data starting on row 2
-    const newRows = data.map((item) => {
-      const baseName = item.file.name.split(".")[0];
-      const fullName = `${baseName}_${item.campaignId}_${item.date}`;
+    // Step 2: Insert new rows into the existing sheet starting from row 2
+    const rows = data.map((item) => [
+      `${item.file.name.split(".")[0]}_${item.campaignId}_${item.date}`, // Name
+      item.file.name, // Asset File Name
+      item.cturl, // Clickthrough URL
+      item.landingPage, // Landing Page URL
+    ]);
 
-      return headers.map((header) => {
-        switch (header) {
-          case "Name (required)":
-            return fullName;
-          case "Asset File Name (required)":
-            return item.file.name;
-          case "Clickthrough URL (required)":
-            return item.cturl;
-          case "Landing Page URL (required)":
-            return item.landingPage;
-          default:
-            return "";
-        }
-      });
-    });
+    // Convert existing sheet to JSON to get headers
+    const json = utils.sheet_to_json(sheet, { header: 1 });
 
-    // Merge with original rows
-    const updatedSheetData = [headers, ...newRows];
-    const updatedSheet = utils.aoa_to_sheet(updatedSheetData);
+    // Inject our new rows starting at index 1 (below the headers)
+    const updatedSheet = utils.aoa_to_sheet([
+      ...(json as any[]).slice(0, 1),
+      ...rows,
+      ...(json as any[]).slice(1),
+    ]);
+
     workbook.Sheets[sheetName] = updatedSheet;
 
-    // Step 3: Write the updated workbook to buffer
+    // Step 3: Generate updated workbook buffer
     const workbookBuffer = writeFile(workbook, templateFile.name, {
       bookType: "xlsx",
       type: "buffer",
-    });
+    } as any);
 
-    // Step 4: Create ZIP
+    // Step 4: Create a new ZIP and add files
     const zip = new JSZip();
     zip.file(templateFile.name, workbookBuffer);
 
     for (const item of data) {
-      const arrayBuffer = await item.file.arrayBuffer();
-      zip.file(item.file.name, arrayBuffer);
+      zip.file(item.file.name, item.file);
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
     saveAs(zipBlob, `CreatomatorExport_${Date.now()}.zip`);
-  } catch (err) {
-    console.error("Export failed:", err);
-    alert("Failed to export. Please check your input and try again.");
+  } catch (error) {
+    console.error("Export to ZIP failed:", error);
+    alert("Export failed. Please check console for details.");
   }
 }
