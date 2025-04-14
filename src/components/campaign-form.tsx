@@ -5,9 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
-import { exportToExcel } from "@/lib/export-to-excel";
+import { exportToZip } from "@/lib/export-to-zip";
 
 interface CTURLData {
   url: string;
@@ -19,10 +25,10 @@ export default function CampaignForm() {
   const [campaignId, setCampaignId] = useState("");
   const [landingPage, setLandingPage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [templateFile, setTemplateFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const templateInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -75,10 +81,9 @@ export default function CampaignForm() {
     await processFiles(fileList);
   };
 
-  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
-      setTemplateFile(e.target.files[0]);
-    }
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setTemplateFile(file);
   };
 
   const processFiles = async (fileList: File[]) => {
@@ -94,15 +99,13 @@ export default function CampaignForm() {
 
   const handleExport = () => {
     if (!files.length || !campaignId || !landingPage || !templateFile) {
-      alert("Please upload creatives, a template file, and complete all fields.");
+      alert("Please upload creatives, a template, and complete all fields.");
       return;
     }
     setShowSummary(true);
   };
 
   const confirmExport = () => {
-    if (!templateFile) return;
-
     const data = files.map((file, index) => ({
       file,
       campaignId,
@@ -110,8 +113,7 @@ export default function CampaignForm() {
       landingPage,
       date: today,
     }));
-
-    exportToExcel(data, templateFile);
+    exportToZip(data, templateFile);
     setShowSummary(false);
   };
 
@@ -151,20 +153,25 @@ export default function CampaignForm() {
             className="mt-1 relative border-2 border-dashed border-gray-300 bg-white p-6 rounded-md text-center cursor-pointer hover:border-gray-400"
           >
             <p className="text-gray-500">Drag & drop files here or click to select</p>
-            <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload Excel Template</Label>
-          <div
-            onClick={() => templateInputRef.current?.click()}
-            className="mt-1 relative border border-dashed border-blue-300 bg-white p-4 rounded-md text-center cursor-pointer hover:border-blue-400"
-          >
-            <p className="text-blue-600 text-sm">Click to upload template (.xlsx)</p>
-            <input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} className="hidden" />
-            {templateFile && <p className="text-xs text-green-700 mt-2">{templateFile.name}</p>}
-          </div>
+          <Label className="text-gray-600">Upload Template File</Label>
+          <Input
+            ref={templateInputRef}
+            type="file"
+            accept=".xlsx"
+            onChange={handleTemplateChange}
+            className="bg-white shadow-sm rounded-md"
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -176,7 +183,7 @@ export default function CampaignForm() {
 
         <div>
           <Button onClick={handleExport} variant="secondary">
-            Export as Excel
+            Export as ZIP
           </Button>
         </div>
 
