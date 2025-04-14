@@ -27,12 +27,12 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  const zip = new JSZip();
   const updatedXLSXBlob = writeFileXLSX(workbook, {
     bookType: "xlsx",
     type: "blob",
   });
 
+  const zip = new JSZip();
   zip.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
 
   for (const entry of data) {

@@ -24,13 +24,12 @@ interface CTURLData {
 export default function CampaignForm() {
   const [campaignId, setCampaignId] = useState("");
   const [landingPage, setLandingPage] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
   const [template, setTemplate] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const creativeInputRef = useRef<HTMLInputElement | null>(null);
-  const templateInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const today = (() => {
     const now = new Date();
@@ -57,7 +56,7 @@ export default function CampaignForm() {
 
   const validateUrls = async (filesList: File[], useRemoveTerm: boolean) => {
     const updated = await Promise.all(
-      filesList.map(async (_, i) => {
+      filesList.map(async () => {
         const url = buildCTURL(landingPage, campaignId, useRemoveTerm);
         try {
           await fetch(url, { method: "HEAD", mode: "no-cors" });
@@ -70,20 +69,15 @@ export default function CampaignForm() {
     setCturls(updated);
   };
 
-  const handleCreativeDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const fileList = Array.from(e.dataTransfer.files);
     await processFiles(fileList);
   };
 
-  const handleCreativeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files ? Array.from(e.target.files) : [];
     await processFiles(fileList);
-  };
-
-  const handleTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setTemplate(file);
   };
 
   const processFiles = async (fileList: File[]) => {
@@ -99,13 +93,17 @@ export default function CampaignForm() {
 
   const handleExport = () => {
     if (!files.length || !campaignId || !landingPage || !template) {
-      alert("Please upload creatives, a template, and complete all fields.");
+      alert("Please upload creatives, a template file, and complete all fields.");
       return;
     }
     setShowSummary(true);
   };
 
   const confirmExport = () => {
+    if (!template) {
+      alert("Please upload a template file before exporting.");
+      return;
+    }
     const data = files.map((file, index) => ({
       file,
       campaignId,
@@ -145,27 +143,32 @@ export default function CampaignForm() {
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload TTD Excel Template</Label>
-          <Input type="file" accept=".xlsx" onChange={handleTemplateChange} ref={templateInputRef} className="mt-1" />
-        </div>
-
-        <div>
           <Label className="text-gray-600">Upload Creatives</Label>
           <div
             onDragOver={(e) => e.preventDefault()}
-            onDrop={handleCreativeDrop}
-            onClick={() => creativeInputRef.current?.click()}
+            onDrop={handleFileDrop}
+            onClick={() => fileInputRef.current?.click()}
             className="mt-1 relative border-2 border-dashed border-gray-300 bg-white p-6 rounded-md text-center cursor-pointer hover:border-gray-400"
           >
             <p className="text-gray-500">Drag & drop files here or click to select</p>
             <input
-              ref={creativeInputRef}
+              ref={fileInputRef}
               type="file"
               multiple
-              onChange={handleCreativeChange}
+              onChange={handleFileChange}
               className="hidden"
             />
           </div>
+        </div>
+
+        <div>
+          <Label className="text-gray-600">Upload Template File</Label>
+          <Input
+            className="mt-1 bg-white shadow-sm rounded-md"
+            type="file"
+            accept=".xlsx"
+            onChange={(e) => setTemplate(e.target.files?.[0] ?? null)}
+          />
         </div>
 
         <div className="flex items-center gap-3">
