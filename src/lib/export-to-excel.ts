@@ -1,4 +1,4 @@
-import { read, utils, write, WorkBook } from "xlsx";
+import { read, utils, write } from "xlsx";
 import { saveAs } from "file-saver";
 
 interface CreativeData {
@@ -10,31 +10,33 @@ interface CreativeData {
 }
 
 export async function exportToExcel(data: CreativeData[], templateFile: File) {
+  // Read the uploaded template file into an ArrayBuffer
   const arrayBuffer = await templateFile.arrayBuffer();
-  const workbook = read(arrayBuffer, { type: "buffer" });
-  const ws = workbook.Sheets["Hosted Display"];
 
+  // Load the workbook from buffer
+  const workbook = read(arrayBuffer, { type: "buffer" });
+
+  // Get the 'Hosted Display' worksheet
+  const sheet = workbook.Sheets["Hosted Display"];
+
+  // Inject data starting at row 2
   const startRow = 2;
   data.forEach((entry, i) => {
     const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
     const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
 
-    ws[`A${row}`] = { t: "s", v: creativeName };
-    ws[`C${row}`] = { t: "s", v: entry.file.name };
-    ws[`D${row}`] = { t: "s", v: entry.cturl };
-    ws[`E${row}`] = { t: "s", v: entry.landingPage };
+    sheet[`A${row}`] = { t: "s", v: creativeName };
+    sheet[`C${row}`] = { t: "s", v: entry.file.name };
+    sheet[`D${row}`] = { t: "s", v: entry.cturl };
+    sheet[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // ✅ FIX: Use `write()` to create a binary array
-  const updatedXLSXBuffer = write(workbook, {
-    bookType: "xlsx",
-    type: "array",
+  // Generate a new binary workbook
+  const xlsxBlob = new Blob([write(workbook, { bookType: "xlsx", type: "array" })], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 
-  const blob = new Blob([updatedXLSXBuffer], {
-    type: "application/octet-stream",
-  });
-
-  saveAs(blob, "Hosted_Display_Export.xlsx");
+  // Save file with the same name TTD expects
+  saveAs(xlsxBlob, "bulkcreativeimporttemplate.v34__6__copy.xlsx");
 }
