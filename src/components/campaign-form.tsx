@@ -5,7 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
 import { exportToZip } from "@/lib/export-to-zip";
 
@@ -19,10 +25,12 @@ export default function CampaignForm() {
   const [campaignId, setCampaignId] = useState("");
   const [landingPage, setLandingPage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [template, setTemplate] = useState<File | null>(null);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const creativeInputRef = useRef<HTMLInputElement | null>(null);
+  const templateInputRef = useRef<HTMLInputElement | null>(null);
 
   const today = (() => {
     const now = new Date();
@@ -49,7 +57,7 @@ export default function CampaignForm() {
 
   const validateUrls = async (filesList: File[], useRemoveTerm: boolean) => {
     const updated = await Promise.all(
-      filesList.map(async () => {
+      filesList.map(async (_, i) => {
         const url = buildCTURL(landingPage, campaignId, useRemoveTerm);
         try {
           await fetch(url, { method: "HEAD", mode: "no-cors" });
@@ -62,15 +70,20 @@ export default function CampaignForm() {
     setCturls(updated);
   };
 
-  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const handleCreativeDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const fileList = Array.from(e.dataTransfer.files);
     await processFiles(fileList);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCreativeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files ? Array.from(e.target.files) : [];
     await processFiles(fileList);
+  };
+
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setTemplate(file);
   };
 
   const processFiles = async (fileList: File[]) => {
@@ -85,8 +98,8 @@ export default function CampaignForm() {
   };
 
   const handleExport = () => {
-    if (!files.length || !campaignId || !landingPage) {
-      alert("Please upload creatives and complete all fields.");
+    if (!files.length || !campaignId || !landingPage || !template) {
+      alert("Please upload creatives, a template, and complete all fields.");
       return;
     }
     setShowSummary(true);
@@ -100,7 +113,7 @@ export default function CampaignForm() {
       landingPage,
       date: today,
     }));
-    exportToZip(data);
+    exportToZip(data, template);
     setShowSummary(false);
   };
 
@@ -132,19 +145,24 @@ export default function CampaignForm() {
         </div>
 
         <div>
+          <Label className="text-gray-600">Upload TTD Excel Template</Label>
+          <Input type="file" accept=".xlsx" onChange={handleTemplateChange} ref={templateInputRef} className="mt-1" />
+        </div>
+
+        <div>
           <Label className="text-gray-600">Upload Creatives</Label>
           <div
             onDragOver={(e) => e.preventDefault()}
-            onDrop={handleFileDrop}
-            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleCreativeDrop}
+            onClick={() => creativeInputRef.current?.click()}
             className="mt-1 relative border-2 border-dashed border-gray-300 bg-white p-6 rounded-md text-center cursor-pointer hover:border-gray-400"
           >
             <p className="text-gray-500">Drag & drop files here or click to select</p>
             <input
-              ref={fileInputRef}
+              ref={creativeInputRef}
               type="file"
               multiple
-              onChange={handleFileChange}
+              onChange={handleCreativeChange}
               className="hidden"
             />
           </div>

@@ -1,5 +1,6 @@
-import { read, write } from "xlsx";
 import { saveAs } from "file-saver";
+import JSZip from "jszip";
+import { read, utils, writeFileXLSX } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -9,36 +10,35 @@ interface CreativeData {
   date: string;
 }
 
-export async function exportToExcel(data: CreativeData[]) {
-  // Load original TTD template
-  const response = await fetch("/bulkcreativeimporttemplate.v34__6__copy.xlsx");
-  const arrayBuffer = await response.arrayBuffer();
-
-  const workbook = read(arrayBuffer, { type: "buffer", cellStyles: true });
-  const sheet = workbook.Sheets["Hosted Display"];
+export async function exportToZip(data: CreativeData[], templateFile: File) {
+  const arrayBuffer = await templateFile.arrayBuffer();
+  const workbook = read(arrayBuffer, { type: "buffer" });
+  const ws = workbook.Sheets["Hosted Display"];
 
   const startRow = 2;
-  data.forEach((item, i) => {
+  data.forEach((entry, i) => {
     const row = startRow + i;
-    const base = item.file.name.split(".")[0];
-    const creativeName = `${base}_${item.campaignId}_${item.date}`;
+    const baseName = entry.file.name.split(".")[0];
+    const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
 
-    sheet[`A${row}`] = { t: "s", v: creativeName };
-    sheet[`C${row}`] = { t: "s", v: item.file.name };
-    sheet[`D${row}`] = { t: "s", v: item.cturl };
-    sheet[`E${row}`] = { t: "s", v: item.landingPage };
+    ws[`A${row}`] = { t: "s", v: creativeName };
+    ws[`C${row}`] = { t: "s", v: entry.file.name };
+    ws[`D${row}`] = { t: "s", v: entry.cturl };
+    ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // Generate binary workbook output
-  const wbout = write(workbook, {
+  const zip = new JSZip();
+  const updatedXLSXBlob = writeFileXLSX(workbook, {
     bookType: "xlsx",
-    type: "array",
-    compression: true,
+    type: "blob",
   });
 
-  const blob = new Blob([wbout], {
-    type: "application/octet-stream",
-  });
+  zip.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
 
-  saveAs(blob, `Hosted_Display_Export_${Date.now()}.xlsx`);
+  for (const entry of data) {
+    zip.file(entry.file.name, entry.file);
+  }
+
+  const finalZip = await zip.generateAsync({ type: "blob" });
+  saveAs(finalZip, `CreatomatorExport_${Date.now()}.zip`);
 }
