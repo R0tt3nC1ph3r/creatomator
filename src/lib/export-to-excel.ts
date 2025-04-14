@@ -1,6 +1,5 @@
+import { read, utils, write, WorkBook } from "xlsx";
 import { saveAs } from "file-saver";
-import JSZip from "jszip";
-import { read, utils, writeFileXLSX } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -10,7 +9,7 @@ interface CreativeData {
   date: string;
 }
 
-export async function exportToZip(data: CreativeData[], templateFile: File) {
+export async function exportToExcel(data: CreativeData[], templateFile: File) {
   const arrayBuffer = await templateFile.arrayBuffer();
   const workbook = read(arrayBuffer, { type: "buffer" });
   const ws = workbook.Sheets["Hosted Display"];
@@ -27,18 +26,15 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  const updatedXLSXBlob = writeFileXLSX(workbook, {
+  // ✅ FIX: Use `write()` to create a binary array
+  const updatedXLSXBuffer = write(workbook, {
     bookType: "xlsx",
-    type: "blob",
+    type: "array",
   });
 
-  const zip = new JSZip();
-  zip.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
+  const blob = new Blob([updatedXLSXBuffer], {
+    type: "application/octet-stream",
+  });
 
-  for (const entry of data) {
-    zip.file(entry.file.name, entry.file);
-  }
-
-  const finalZip = await zip.generateAsync({ type: "blob" });
-  saveAs(finalZip, `CreatomatorExport_${Date.now()}.zip`);
+  saveAs(blob, "Hosted_Display_Export.xlsx");
 }
