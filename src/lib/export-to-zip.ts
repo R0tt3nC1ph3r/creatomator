@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, writeFile, WorkBook } from "xlsx";
+import { read, utils, writeFileXLSX } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -11,13 +11,9 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const arrayBuffer = await templateFile.arrayBuffer();
-  const workbook: WorkBook = read(arrayBuffer, { type: "buffer" });
-  const sheet = workbook.Sheets["Hosted Display"];
-
-  if (!sheet) {
-    throw new Error("'Hosted Display' sheet not found in uploaded template");
-  }
+  const templateBuffer = await templateFile.arrayBuffer();
+  const workbook = read(templateBuffer, { type: "buffer" });
+  const ws = workbook.Sheets["Hosted Display"];
 
   const startRow = 2;
   data.forEach((entry, i) => {
@@ -25,33 +21,26 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     const baseName = entry.file.name.split(".")[0];
     const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
 
-    sheet[`A${row}`] = { t: "s", v: creativeName };
-    sheet[`C${row}`] = { t: "s", v: entry.file.name };
-    sheet[`D${row}`] = { t: "s", v: entry.cturl };
-    sheet[`E${row}`] = { t: "s", v: entry.landingPage };
+    ws[`A${row}`] = { t: "s", v: creativeName };
+    ws[`C${row}`] = { t: "s", v: entry.file.name };
+    ws[`D${row}`] = { t: "s", v: entry.cturl };
+    ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // Write modified workbook to binary format
-  const wbout = writeFile(workbook, "Hosted_Display_Export.xlsx", {
-    bookType: "xlsx",
-    type: "binary",
-  });
+  const updatedXLSXBlob = new Blob([
+    writeFileXLSX(workbook, { bookType: "xlsx", type: "array" })
+  ], { type: "application/octet-stream" });
 
-  // Create a new zip file
   const zip = new JSZip();
+  const folderName = `Creatives_${data[0].campaignId}_${data[0].date}`;
+  const folder = zip.folder(folderName);
 
-  // Add the workbook to the zip
-  const updatedArrayBuffer = await templateFile.arrayBuffer();
-  zip.file("Hosted_Display_Export.xlsx", updatedArrayBuffer);
-
-  // Add each creative asset to the zip
   data.forEach((entry) => {
-    zip.file(entry.file.name, entry.file);
+    folder?.file(entry.file.name, entry.file);
   });
 
-  // Generate the zip file
-  const content = await zip.generateAsync({ type: "blob" });
+  folder?.file("Hosted_Display_Template.xlsx", updatedXLSXBlob);
 
-  // Trigger download
-  saveAs(content, `CreatomatorExport_${Date.now()}.zip`);
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  saveAs(zipBlob, `${folderName}.zip`);
 }

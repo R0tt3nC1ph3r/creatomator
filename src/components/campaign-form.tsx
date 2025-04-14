@@ -25,10 +25,10 @@ export default function CampaignForm() {
   const [campaignId, setCampaignId] = useState("");
   const [landingPage, setLandingPage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const templateInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -98,14 +98,19 @@ export default function CampaignForm() {
   };
 
   const handleExport = () => {
-    if (!files.length || !campaignId || !landingPage || !templateFile) {
-      alert("Please upload creatives, a template, and complete all fields.");
+    if (!files.length || !campaignId || !landingPage) {
+      alert("Please upload creatives and complete all fields.");
       return;
     }
     setShowSummary(true);
   };
 
   const confirmExport = () => {
+    if (!templateFile) {
+      alert("Please upload a template file.");
+      return;
+    }
+
     const data = files.map((file, index) => ({
       file,
       campaignId,
@@ -113,6 +118,7 @@ export default function CampaignForm() {
       landingPage,
       date: today,
     }));
+
     exportToZip(data, templateFile);
     setShowSummary(false);
   };
@@ -164,14 +170,8 @@ export default function CampaignForm() {
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload Template File</Label>
-          <Input
-            ref={templateInputRef}
-            type="file"
-            accept=".xlsx"
-            onChange={handleTemplateChange}
-            className="bg-white shadow-sm rounded-md"
-          />
+          <Label className="text-gray-600">Upload Template</Label>
+          <Input type="file" onChange={handleTemplateChange} ref={templateInputRef} />
         </div>
 
         <div className="flex items-center gap-3">
