@@ -1,6 +1,6 @@
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
-import { read, utils, write } from "xlsx";
+import { read, write } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -27,7 +27,7 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // Convert workbook to binary array
+  // ✅ FIX: Use write() to generate array buffer
   const updatedXLSXBuffer = write(workbook, {
     bookType: "xlsx",
     type: "array",
