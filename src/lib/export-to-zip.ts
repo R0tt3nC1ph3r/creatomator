@@ -1,7 +1,6 @@
-// src/lib/export-to-zip.ts
 import JSZip from "jszip";
-import { read, utils, write } from "xlsx";
 import { saveAs } from "file-saver";
+import { read, utils, writeFile, WorkBook } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -12,35 +11,44 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const zip = new JSZip();
-
-  // Read and clone the uploaded template
   const arrayBuffer = await templateFile.arrayBuffer();
-  const workbook = read(arrayBuffer, { type: "buffer" });
+  const workbook: WorkBook = read(arrayBuffer, { type: "array" });
 
-  const ws = workbook.Sheets["Hosted Display"];
-  const startRow = 2;
+  const sheetName = "Hosted Display";
+  const ws = workbook.Sheets[sheetName];
 
-  data.forEach((entry, i) => {
-    const row = startRow + i;
-    const baseName = entry.file.name.split(".")[0];
-    const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
+  if (!ws) {
+    alert(`Sheet '${sheetName}' not found in the template.`);
+    return;
+  }
 
-    ws[`A${row}`] = { t: "s", v: creativeName };
-    ws[`C${row}`] = { t: "s", v: entry.file.name };
-    ws[`D${row}`] = { t: "s", v: entry.cturl };
-    ws[`E${row}`] = { t: "s", v: entry.landingPage };
+  // Inject creative data starting from row 2
+  data.forEach((item, index) => {
+    const row = index + 2;
+    const baseName = item.file.name.split(".")[0];
+    const finalName = `${baseName}_${item.campaignId}_${item.date}`;
+
+    ws[`A${row}`] = { t: "s", v: finalName }; // Creative Name
+    ws[`D${row}`] = { t: "s", v: item.cturl }; // CTURL
+    ws[`I${row}`] = { t: "s", v: item.landingPage }; // Landing Page
+    ws[`L${row}`] = { t: "s", v: item.file.name }; // Filename
   });
 
-  // Write updated workbook
-  const buffer = write(workbook, { bookType: "xlsx", type: "array" });
-  zip.file(templateFile.name, buffer);
-
-  // Add creatives
-  data.forEach(({ file }) => {
-    zip.file(file.name, file);
+  const zip = new JSZip();
+  const workbookBuffer = writeFile(workbook, {
+    bookType: "xlsx",
+    type: "buffer",
   });
 
-  const blob = await zip.generateAsync({ type: "blob" });
-  saveAs(blob, `CreatomatorExport_${Date.now()}.zip`);
+  // Add filled out workbook
+  zip.file(templateFile.name, workbookBuffer);
+
+  // Add each creative
+  data.forEach((item) => {
+    zip.file(item.file.name, item.file);
+  });
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const filename = `CreatomatorExport_${Date.now()}.zip`;
+  saveAs(zipBlob, filename);
 }
