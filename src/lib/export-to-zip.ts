@@ -11,46 +11,35 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const arrayBuffer = await templateFile.arrayBuffer();
-  const workbook = read(arrayBuffer, { type: "array" });
+  // Step 1: Load the uploaded template workbook
+  const templateArrayBuffer = await templateFile.arrayBuffer();
+  const workbook = read(templateArrayBuffer);
+  const ws = workbook.Sheets["Hosted Display"];
 
-  const sheetName = "Hosted Display";
-  const sheet = workbook.Sheets[sheetName];
-
-  if (!sheet) {
-    alert(`Sheet "${sheetName}" not found in uploaded workbook.`);
-    return;
-  }
-
-  // Inject data into rows starting at row 2
+  // Step 2: Inject new rows (starting at row 2)
   const startRow = 2;
-  data.forEach((entry, index) => {
-    const row = startRow + index;
+  data.forEach((entry, i) => {
+    const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
     const creativeName = `${baseName}_${entry.campaignId}_${entry.date}`;
 
-    sheet[`A${row}`] = { t: "s", v: creativeName };
-    sheet[`C${row}`] = { t: "s", v: entry.file.name };
-    sheet[`D${row}`] = { t: "s", v: entry.cturl };
-    sheet[`E${row}`] = { t: "s", v: entry.landingPage };
+    ws[`A${row}`] = { t: "s", v: creativeName }; // Name
+    ws[`C${row}`] = { t: "s", v: entry.file.name }; // Asset File Name
+    ws[`D${row}`] = { t: "s", v: entry.cturl }; // CTURL
+    ws[`E${row}`] = { t: "s", v: entry.landingPage }; // Landing Page
   });
 
-  // Manually update sheet range so Excel recognizes new rows
-  const endRow = startRow + data.length - 1;
-  sheet["!ref"] = `A1:E${endRow}`;
-
-  // Generate buffer from updated workbook
-  const workbookBuffer = write(workbook, { bookType: "xlsx", type: "buffer" });
-
-  // Build ZIP with creatives + workbook in same root
+  // Step 3: Write the updated workbook to binary and add to ZIP
   const zip = new JSZip();
+  const workbookBuffer = write(workbook, { bookType: "xlsx", type: "buffer" });
   zip.file("bulkcreativeimporttemplate.v34__6__copy.xlsx", workbookBuffer);
 
-  for (const entry of data) {
-    const fileBuffer = await entry.file.arrayBuffer();
-    zip.file(entry.file.name, fileBuffer);
-  }
+  // Step 4: Add creatives to the root of the ZIP
+  data.forEach((entry) => {
+    zip.file(entry.file.name, entry.file);
+  });
 
+  // Step 5: Generate ZIP and trigger download
   const zipBlob = await zip.generateAsync({ type: "blob" });
   saveAs(zipBlob, `CreatomatorExport_${Date.now()}.zip`);
 }
