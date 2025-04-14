@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, writeFile, WorkBook } from "xlsx";
+import { read, utils, writeFile } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -11,17 +11,14 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  // Load the uploaded template
+  // Step 1: Read the uploaded template file
   const arrayBuffer = await templateFile.arrayBuffer();
   const workbook = read(arrayBuffer, { type: "buffer" });
+  const sheetName = "Hosted Display";
+  const ws = workbook.Sheets[sheetName];
 
-  // Set workbook title to match expected name
-  workbook.Props = workbook.Props || {};
-  workbook.Props.Title = "bulkcreativeimporttemplate.v34__6__copy";
-
-  const ws = workbook.Sheets["Hosted Display"];
+  // Step 2: Fill out data starting at row 2
   const startRow = 2;
-
   data.forEach((entry, i) => {
     const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
@@ -33,24 +30,23 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  // Convert workbook to binary
-  const updatedWorkbook = writeFile(workbook, "bulkcreativeimporttemplate.v34__6__copy.xlsx", { bookType: "xlsx" });
-
-  // Create ZIP file
+  // Step 3: Write the updated workbook to binary and add to ZIP
   const zip = new JSZip();
+  const workbookBuffer = writeFile(workbook, {
+    bookType: "xlsx",
+    type: "buffer",
+  });
 
-  // Add filled workbook to zip
-  zip.file("bulkcreativeimporttemplate.v34__6__copy.xlsx", arrayBuffer);
+  zip.file("bulkcreativeimporttemplate.v34__6__copy.xlsx", workbookBuffer);
 
-  // Add creatives to a folder inside zip
-  const creativesFolder = zip.folder("creatives");
+  // Step 4: Add creative files to the ZIP
+  const creativeFolder = zip.folder("creatives");
   for (const entry of data) {
-    const arrayBuffer = await entry.file.arrayBuffer();
-    creativesFolder?.file(entry.file.name, arrayBuffer);
+    const buffer = await entry.file.arrayBuffer();
+    creativeFolder?.file(entry.file.name, buffer);
   }
 
-  // Generate and download ZIP
+  // Step 5: Generate the final ZIP file
   const zipBlob = await zip.generateAsync({ type: "blob" });
-  const zipFilename = `Creatives_Export_${Date.now()}.zip`;
-  saveAs(zipBlob, zipFilename);
+  saveAs(zipBlob, `Creatomator_Export_${Date.now()}.zip`);
 }
