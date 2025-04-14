@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, writeFileXLSX } from "xlsx";
+import { read, utils, write } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -11,8 +11,8 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const templateBuffer = await templateFile.arrayBuffer();
-  const workbook = read(templateBuffer, { type: "buffer" });
+  const buffer = await templateFile.arrayBuffer();
+  const workbook = read(buffer);
   const ws = workbook.Sheets["Hosted Display"];
 
   const startRow = 2;
@@ -27,20 +27,28 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  const updatedXLSXBlob = new Blob([
-    writeFileXLSX(workbook, { bookType: "xlsx", type: "array" })
-  ], { type: "application/octet-stream" });
-
-  const zip = new JSZip();
-  const folderName = `Creatives_${data[0].campaignId}_${data[0].date}`;
-  const folder = zip.folder(folderName);
-
-  data.forEach((entry) => {
-    folder?.file(entry.file.name, entry.file);
+  const updatedXLSXBuffer = write(workbook, {
+    bookType: "xlsx",
+    type: "array",
   });
 
-  folder?.file("Hosted_Display_Template.xlsx", updatedXLSXBlob);
+  const updatedXLSXBlob = new Blob([updatedXLSXBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  const zip = new JSZip();
+  const campaignFolder = zip.folder(`${data[0].campaignId}_${data[0].date}`);
+
+  campaignFolder?.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
+  const creativesFolder = campaignFolder?.folder("creatives");
+
+  await Promise.all(
+    data.map(async ({ file }) => {
+      const arrayBuffer = await file.arrayBuffer();
+      creativesFolder?.file(file.name, arrayBuffer);
+    })
+  );
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `${folderName}.zip`);
+  saveAs(zipBlob, `${data[0].campaignId}_${data[0].date}_Export.zip`);
 }
