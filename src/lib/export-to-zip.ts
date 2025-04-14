@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { read, utils, write } from "xlsx";
+import { read, utils, writeFile, WorkBook } from "xlsx";
 
 interface CreativeData {
   file: File;
@@ -11,11 +11,17 @@ interface CreativeData {
 }
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
-  const buffer = await templateFile.arrayBuffer();
-  const workbook = read(buffer);
-  const ws = workbook.Sheets["Hosted Display"];
+  // Load the uploaded template
+  const arrayBuffer = await templateFile.arrayBuffer();
+  const workbook = read(arrayBuffer, { type: "buffer" });
 
+  // Set workbook title to match expected name
+  workbook.Props = workbook.Props || {};
+  workbook.Props.Title = "bulkcreativeimporttemplate.v34__6__copy";
+
+  const ws = workbook.Sheets["Hosted Display"];
   const startRow = 2;
+
   data.forEach((entry, i) => {
     const row = startRow + i;
     const baseName = entry.file.name.split(".")[0];
@@ -27,28 +33,24 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
     ws[`E${row}`] = { t: "s", v: entry.landingPage };
   });
 
-  const updatedXLSXBuffer = write(workbook, {
-    bookType: "xlsx",
-    type: "array",
-  });
+  // Convert workbook to binary
+  const updatedWorkbook = writeFile(workbook, "bulkcreativeimporttemplate.v34__6__copy.xlsx", { bookType: "xlsx" });
 
-  const updatedXLSXBlob = new Blob([updatedXLSXBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-
+  // Create ZIP file
   const zip = new JSZip();
-  const campaignFolder = zip.folder(`${data[0].campaignId}_${data[0].date}`);
 
-  campaignFolder?.file("Hosted_Display_Export.xlsx", updatedXLSXBlob);
-  const creativesFolder = campaignFolder?.folder("creatives");
+  // Add filled workbook to zip
+  zip.file("bulkcreativeimporttemplate.v34__6__copy.xlsx", arrayBuffer);
 
-  await Promise.all(
-    data.map(async ({ file }) => {
-      const arrayBuffer = await file.arrayBuffer();
-      creativesFolder?.file(file.name, arrayBuffer);
-    })
-  );
+  // Add creatives to a folder inside zip
+  const creativesFolder = zip.folder("creatives");
+  for (const entry of data) {
+    const arrayBuffer = await entry.file.arrayBuffer();
+    creativesFolder?.file(entry.file.name, arrayBuffer);
+  }
 
+  // Generate and download ZIP
   const zipBlob = await zip.generateAsync({ type: "blob" });
-  saveAs(zipBlob, `${data[0].campaignId}_${data[0].date}_Export.zip`);
+  const zipFilename = `Creatives_Export_${Date.now()}.zip`;
+  saveAs(zipBlob, zipFilename);
 }
