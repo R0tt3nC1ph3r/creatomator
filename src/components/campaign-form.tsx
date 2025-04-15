@@ -131,22 +131,22 @@ export default function CampaignForm() {
   const invalidCount = cturls.length - validCount;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-[#f4f4f4] min-h-screen">
+    <div className="max-w-4xl mx-auto p-6 bg-[#f5f5f5] font-sans text-[#1a1a1a] min-h-screen">
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label className="text-gray-600">Campaign ID</Label>
+            <Label className="text-sm font-semibold mb-1 block">Campaign ID</Label>
             <Input
-              className="mt-1 bg-white shadow-sm rounded-md"
+              className="mt-1 bg-white shadow rounded-2xl p-2"
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
               placeholder="Enter Campaign ID"
             />
           </div>
           <div>
-            <Label className="text-gray-600">Landing Page</Label>
+            <Label className="text-sm font-semibold mb-1 block">Landing Page</Label>
             <Input
-              className="mt-1 bg-white shadow-sm rounded-md"
+              className="mt-1 bg-white shadow rounded-2xl p-2"
               value={landingPage}
               onChange={(e) => setLandingPage(e.target.value)}
               placeholder="https://example.com"
@@ -155,9 +155,9 @@ export default function CampaignForm() {
         </div>
 
         <div>
-          <Label className="text-gray-600">Client-Provided CTURL (Optional)</Label>
+          <Label className="text-sm font-semibold mb-1 block">Client-Provided CTURL (Optional)</Label>
           <Input
-            className="mt-1 bg-white shadow-sm rounded-md"
+            className="mt-1 bg-white shadow rounded-2xl p-2"
             value={clientCTURL}
             onChange={(e) => setClientCTURL(e.target.value)}
             placeholder="https://example.com/?utm_source=..."
@@ -166,27 +166,27 @@ export default function CampaignForm() {
 
         <div className="flex items-center gap-3">
           <Checkbox checked={useClientCTURL} onCheckedChange={toggleUseClientCTURL} />
-          <span className="text-sm font-medium text-gray-800">
+          <span className="text-sm font-medium text-gray-700">
             Use client-provided CTURL instead of auto-generated one
           </span>
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload Creatives</Label>
+          <Label className="text-sm font-semibold mb-1 block">Upload Creatives</Label>
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="mt-1 relative border-2 border-dashed border-gray-300 bg-white p-6 rounded-md text-center cursor-pointer hover:border-gray-400"
+            className="mt-1 border-2 border-dashed border-gray-300 bg-white p-6 rounded-2xl text-center cursor-pointer hover:border-gray-400"
           >
-            <p className="text-gray-500">Drag & drop files here or click to select</p>
+            <p className="text-sm text-gray-600">Drag & drop files here or click to select</p>
             <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
           </div>
         </div>
 
         <div>
-          <Label className="text-gray-600">Upload TTD Template</Label>
-          <Input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} />
+          <Label className="text-sm font-semibold mb-1 block">Upload TTD Template</Label>
+          <Input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} className="rounded-2xl" />
         </div>
 
         <div className="flex items-center gap-3">
@@ -209,7 +209,7 @@ export default function CampaignForm() {
             const cturl = cturls[index]?.url ?? "";
 
             return (
-              <div key={fileName} className="rounded-xl bg-white shadow-md p-4 space-y-3">
+              <div key={fileName} className="rounded-2xl bg-white shadow p-4 space-y-3">
                 <p className="font-semibold text-gray-800 text-sm">{fileName}</p>
                 <p className="text-xs text-gray-500 break-words">{cturl}</p>
                 <div className="flex items-center gap-2">
