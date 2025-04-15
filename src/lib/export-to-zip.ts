@@ -12,7 +12,6 @@ interface CreativeData {
 
 export async function exportToZip(data: CreativeData[], templateFile: File) {
   try {
-    // Step 1: Load the uploaded Excel template
     const arrayBuffer = await templateFile.arrayBuffer();
     const workbook = read(arrayBuffer);
     const sheetName = "Hosted Display";
@@ -20,22 +19,23 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
 
     if (!sheet) throw new Error(`Sheet "${sheetName}" not found in template.`);
 
-    // Step 2: Convert sheet to JSON and inject new rows
-    const json = utils.sheet_to_json(sheet, { header: 1 });
-    const newRows = data.map((item) => [
-      `${item.file.name.split(".")[0]}_${item.campaignId}_${item.date}`,
-      item.file.name,
-      item.cturl,
-      item.landingPage,
-    ]);
-    const updatedSheet = utils.aoa_to_sheet([
-      ...(json as any[]).slice(0, 1),
-      ...newRows,
-      ...(json as any[]).slice(1),
-    ]);
+    const originalRows = utils.sheet_to_json(sheet, { header: 1 }) as any[]; // full AOA
+    const headers = originalRows[0];
+    const body = originalRows.slice(1);
+
+    const injectedRows = data.map((item) => {
+      const row: any[] = Array(headers.length).fill(""); // preserve original column count
+      row[0] = `${item.file.name.split(".")[0]}_${item.campaignId}_${item.date}`; // Column A
+      row[2] = item.file.name; // Column C
+      row[3] = item.cturl;     // Column D
+      row[4] = item.landingPage; // Column E
+      return row;
+    });
+
+    const combined = [headers, ...injectedRows, ...body];
+    const updatedSheet = utils.aoa_to_sheet(combined);
     workbook.Sheets[sheetName] = updatedSheet;
 
-    // Step 3: Write updated workbook to binary string
     const updatedWorkbookBinary = write(workbook, {
       bookType: "xlsx",
       type: "binary",
@@ -48,7 +48,6 @@ export async function exportToZip(data: CreativeData[], templateFile: File) {
       return buf;
     };
 
-    // Step 4: Create a ZIP with updated workbook and creatives
     const zip = new JSZip();
     zip.file(templateFile.name, stringToArrayBuffer(updatedWorkbookBinary));
     for (const item of data) {
