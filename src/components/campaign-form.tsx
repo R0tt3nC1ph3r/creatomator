@@ -27,6 +27,8 @@ export default function CampaignForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
+  const [useCustomCTURL, setUseCustomCTURL] = useState(false);
+  const [customCTURL, setCustomCTURL] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
 
@@ -59,7 +61,7 @@ export default function CampaignForm() {
   const validateUrls = async (filesList: File[], useRemoveTerm: boolean) => {
     const updated = await Promise.all(
       filesList.map(async () => {
-        const url = buildCTURL(landingPage, campaignId, useRemoveTerm);
+        const url = useCustomCTURL ? customCTURL : buildCTURL(landingPage, campaignId, useRemoveTerm);
         try {
           await fetch(url, { method: "HEAD", mode: "no-cors" });
           return { url, valid: true, removeTerm: useRemoveTerm };
@@ -99,7 +101,7 @@ export default function CampaignForm() {
   };
 
   const handleExport = () => {
-    if (!files.length || !campaignId || !landingPage || !templateFile) {
+    if (!files.length || !campaignId || !landingPage || !templateFile || (useCustomCTURL && !customCTURL)) {
       alert("Please complete all fields and upload files/template.");
       return;
     }
@@ -145,6 +147,25 @@ export default function CampaignForm() {
             />
           </div>
         </div>
+
+        <div className="flex items-center gap-3">
+          <Checkbox checked={useCustomCTURL} onCheckedChange={() => setUseCustomCTURL(!useCustomCTURL)} />
+          <span className="text-sm font-medium text-blue-800">
+            Use client-provided full CTURL
+          </span>
+        </div>
+
+        {useCustomCTURL && (
+          <div>
+            <Label className="text-gray-600">Custom CTURL</Label>
+            <Input
+              className="mt-1 bg-white shadow-sm rounded-md"
+              value={customCTURL}
+              onChange={(e) => setCustomCTURL(e.target.value)}
+              placeholder="https://example.com?utm_source=..."
+            />
+          </div>
+        )}
 
         <div>
           <Label className="text-gray-600">Upload Creatives</Label>
