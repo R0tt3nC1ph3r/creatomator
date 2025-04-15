@@ -131,22 +131,22 @@ export default function CampaignForm() {
   const invalidCount = cturls.length - validCount;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-[#f5f5f5] font-sans text-[#1a1a1a] min-h-screen">
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="max-w-4xl mx-auto p-6 bg-neutral-950 text-white min-h-screen">
+      <div className="space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <Label className="text-sm font-semibold mb-1 block">Campaign ID</Label>
+            <Label className="text-neutral-300">Campaign ID</Label>
             <Input
-              className="mt-1 bg-white shadow rounded-2xl p-2"
+              className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
               placeholder="Enter Campaign ID"
             />
           </div>
           <div>
-            <Label className="text-sm font-semibold mb-1 block">Landing Page</Label>
+            <Label className="text-neutral-300">Landing Page</Label>
             <Input
-              className="mt-1 bg-white shadow rounded-2xl p-2"
+              className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
               value={landingPage}
               onChange={(e) => setLandingPage(e.target.value)}
               placeholder="https://example.com"
@@ -155,49 +155,55 @@ export default function CampaignForm() {
         </div>
 
         <div>
-          <Label className="text-sm font-semibold mb-1 block">Client-Provided CTURL (Optional)</Label>
+          <Label className="text-neutral-300">Client-Provided CTURL (Optional)</Label>
           <Input
-            className="mt-1 bg-white shadow rounded-2xl p-2"
+            className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
             value={clientCTURL}
             onChange={(e) => setClientCTURL(e.target.value)}
             placeholder="https://example.com/?utm_source=..."
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Checkbox checked={useClientCTURL} onCheckedChange={toggleUseClientCTURL} />
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm text-neutral-300">
             Use client-provided CTURL instead of auto-generated one
           </span>
         </div>
 
         <div>
-          <Label className="text-sm font-semibold mb-1 block">Upload Creatives</Label>
+          <Label className="text-neutral-300">Upload Creatives</Label>
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="mt-1 border-2 border-dashed border-gray-300 bg-white p-6 rounded-2xl text-center cursor-pointer hover:border-gray-400"
+            className="mt-2 border-2 border-dashed border-neutral-700 bg-neutral-900 p-6 rounded-md text-center cursor-pointer hover:border-orange-500"
           >
-            <p className="text-sm text-gray-600">Drag & drop files here or click to select</p>
+            <p className="text-neutral-500">Drag & drop files here or click to select</p>
             <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
           </div>
         </div>
 
         <div>
-          <Label className="text-sm font-semibold mb-1 block">Upload TTD Template</Label>
-          <Input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} className="rounded-2xl" />
+          <Label className="text-neutral-300">Upload TTD Template</Label>
+          <Input
+            ref={templateInputRef}
+            type="file"
+            accept=".xlsx"
+            onChange={handleTemplateUpload}
+            className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
+          />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Checkbox checked={removeTermGlobal} onCheckedChange={toggleRemoveTermGlobal} />
-          <span className="text-sm font-medium text-yellow-800">
-            Remove <code className="bg-yellow-100 px-1 rounded">utm_term=%%TTD_CAMPAIGNID%%</code> from all CTURLs
+          <span className="text-sm text-orange-400">
+            Remove <code className="bg-neutral-800 px-1 rounded">utm_term=%%TTD_CAMPAIGNID%%</code> from all CTURLs
           </span>
         </div>
 
         <div>
-          <Button onClick={handleExport} variant="secondary">
+          <Button onClick={handleExport} variant="secondary" className="bg-orange-500 text-white hover:bg-orange-600">
             Export as ZIP
           </Button>
         </div>
@@ -209,14 +215,14 @@ export default function CampaignForm() {
             const cturl = cturls[index]?.url ?? "";
 
             return (
-              <div key={fileName} className="rounded-2xl bg-white shadow p-4 space-y-3">
-                <p className="font-semibold text-gray-800 text-sm">{fileName}</p>
-                <p className="text-xs text-gray-500 break-words">{cturl}</p>
+              <div key={fileName} className="rounded-xl bg-neutral-900 border border-neutral-700 p-4 space-y-3">
+                <p className="font-semibold text-white text-sm">{fileName}</p>
+                <p className="text-xs text-neutral-400 break-words">{cturl}</p>
                 <div className="flex items-center gap-2">
                   {cturls[index]?.valid ? (
-                    <CheckCircle className="text-green-500 h-4 w-4" />
+                    <CheckCircle className="text-green-400 h-4 w-4" />
                   ) : (
-                    <XCircle className="text-red-500 h-4 w-4" />
+                    <XCircle className="text-red-400 h-4 w-4" />
                   )}
                 </div>
               </div>
@@ -229,7 +235,7 @@ export default function CampaignForm() {
             <DialogHeader>
               <DialogTitle>Confirm Export</DialogTitle>
             </DialogHeader>
-            <div className="space-y-2 text-sm text-gray-700">
+            <div className="space-y-2 text-sm text-neutral-300">
               <p><strong>Campaign ID:</strong> {campaignId}</p>
               <p><strong>Creatives:</strong> {files.length}</p>
               <p><strong>Valid CTURLs:</strong> {validCount}</p>
@@ -237,7 +243,7 @@ export default function CampaignForm() {
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowSummary(false)}>Cancel</Button>
-              <Button onClick={confirmExport}>Export Now</Button>
+              <Button onClick={confirmExport} className="bg-orange-500 text-white hover:bg-orange-600">Export Now</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
