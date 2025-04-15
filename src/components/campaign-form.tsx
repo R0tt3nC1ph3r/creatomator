@@ -131,22 +131,22 @@ export default function CampaignForm() {
   const invalidCount = cturls.length - validCount;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-neutral-950 text-white min-h-screen">
-      <div className="space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px", background: "#f6f6f6" }}>
+      <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", boxShadow: "0 0 12px rgba(0,0,0,0.05)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
           <div>
-            <Label className="text-neutral-300">Campaign ID</Label>
+            <Label style={{ color: "#444", fontWeight: 600 }}>Campaign ID</Label>
             <Input
-              className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
+              style={{ marginTop: "8px" }}
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
               placeholder="Enter Campaign ID"
             />
           </div>
           <div>
-            <Label className="text-neutral-300">Landing Page</Label>
+            <Label style={{ color: "#444", fontWeight: 600 }}>Landing Page</Label>
             <Input
-              className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
+              style={{ marginTop: "8px" }}
               value={landingPage}
               onChange={(e) => setLandingPage(e.target.value)}
               placeholder="https://example.com"
@@ -154,100 +154,118 @@ export default function CampaignForm() {
           </div>
         </div>
 
-        <div>
-          <Label className="text-neutral-300">Client-Provided CTURL (Optional)</Label>
+        <div style={{ marginBottom: "24px" }}>
+          <Label style={{ color: "#444", fontWeight: 600 }}>Client CTURL (optional)</Label>
           <Input
-            className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
+            style={{ marginTop: "8px" }}
             value={clientCTURL}
             onChange={(e) => setClientCTURL(e.target.value)}
             placeholder="https://example.com/?utm_source=..."
           />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "24px", gap: "10px" }}>
           <Checkbox checked={useClientCTURL} onCheckedChange={toggleUseClientCTURL} />
-          <span className="text-sm text-neutral-300">
-            Use client-provided CTURL instead of auto-generated one
-          </span>
+          <span style={{ fontSize: "14px", color: "#333" }}>Use client-provided CTURL</span>
         </div>
 
-        <div>
-          <Label className="text-neutral-300">Upload Creatives</Label>
+        <div style={{ marginBottom: "24px" }}>
+          <Label style={{ color: "#444", fontWeight: 600 }}>Upload Creatives</Label>
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="mt-2 border-2 border-dashed border-neutral-700 bg-neutral-900 p-6 rounded-md text-center cursor-pointer hover:border-orange-500"
+            style={{
+              marginTop: "12px",
+              border: "2px dashed #bbb",
+              borderRadius: "8px",
+              padding: "20px",
+              textAlign: "center",
+              cursor: "pointer",
+              background: "#fafafa",
+            }}
           >
-            <p className="text-neutral-500">Drag & drop files here or click to select</p>
-            <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
+            <p style={{ color: "#555" }}>Drag & drop files here or click to select</p>
+            <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} style={{ display: "none" }} />
           </div>
         </div>
 
-        <div>
-          <Label className="text-neutral-300">Upload TTD Template</Label>
-          <Input
-            ref={templateInputRef}
-            type="file"
-            accept=".xlsx"
-            onChange={handleTemplateUpload}
-            className="mt-2 bg-neutral-900 border border-neutral-700 text-white"
-          />
+        <div style={{ marginBottom: "24px" }}>
+          <Label style={{ color: "#444", fontWeight: 600 }}>Upload TTD Template</Label>
+          <Input ref={templateInputRef} type="file" accept=".xlsx" onChange={handleTemplateUpload} style={{ marginTop: "8px" }} />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "24px", gap: "10px" }}>
           <Checkbox checked={removeTermGlobal} onCheckedChange={toggleRemoveTermGlobal} />
-          <span className="text-sm text-orange-400">
-            Remove <code className="bg-neutral-800 px-1 rounded">utm_term=%%TTD_CAMPAIGNID%%</code> from all CTURLs
+          <span style={{ fontSize: "14px", color: "#333" }}>
+            Remove <code style={{ background: "#fffae5", padding: "0 4px", borderRadius: "4px" }}>utm_term=%%TTD_CAMPAIGNID%%</code>
           </span>
         </div>
 
-        <div>
-          <Button onClick={handleExport} variant="secondary" className="bg-orange-500 text-white hover:bg-orange-600">
-            Export as ZIP
-          </Button>
-        </div>
+        <Button
+          onClick={handleExport}
+          style={{
+            backgroundColor: "#222",
+            color: "#fff",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            fontWeight: 600,
+            marginBottom: "32px",
+          }}
+        >
+          Export as ZIP
+        </Button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           {files.map((file, index) => {
             const baseName = file.name.split(".")[0];
             const fileName = `${baseName}_${campaignId}_${today}`;
             const cturl = cturls[index]?.url ?? "";
+            const borderColor = cturls[index]?.valid ? "#4CAF50" : "#f44336";
 
             return (
-              <div key={fileName} className="rounded-xl bg-neutral-900 border border-neutral-700 p-4 space-y-3">
-                <p className="font-semibold text-white text-sm">{fileName}</p>
-                <p className="text-xs text-neutral-400 break-words">{cturl}</p>
-                <div className="flex items-center gap-2">
+              <div
+                key={fileName}
+                style={{
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: "10px",
+                  padding: "12px",
+                  background: "#fff",
+                  boxShadow: "0 0 6px rgba(0,0,0,0.03)",
+                }}
+              >
+                <p style={{ fontWeight: 600, fontSize: "14px", color: "#222" }}>{fileName}</p>
+                <p style={{ fontSize: "12px", color: "#666", wordBreak: "break-all" }}>{cturl}</p>
+                <div style={{ marginTop: "4px" }}>
                   {cturls[index]?.valid ? (
-                    <CheckCircle className="text-green-400 h-4 w-4" />
+                    <CheckCircle color="green" size={16} />
                   ) : (
-                    <XCircle className="text-red-400 h-4 w-4" />
+                    <XCircle color="red" size={16} />
                   )}
                 </div>
               </div>
             );
           })}
         </div>
-
-        <Dialog open={showSummary} onOpenChange={setShowSummary}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Export</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2 text-sm text-neutral-300">
-              <p><strong>Campaign ID:</strong> {campaignId}</p>
-              <p><strong>Creatives:</strong> {files.length}</p>
-              <p><strong>Valid CTURLs:</strong> {validCount}</p>
-              {invalidCount > 0 && <p className="text-red-500">⚠️ {invalidCount} CTURL(s) not valid</p>}
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setShowSummary(false)}>Cancel</Button>
-              <Button onClick={confirmExport} className="bg-orange-500 text-white hover:bg-orange-600">Export Now</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      <Dialog open={showSummary} onOpenChange={setShowSummary}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Export</DialogTitle>
+          </DialogHeader>
+          <div style={{ fontSize: "14px", color: "#333" }}>
+            <p><strong>Campaign ID:</strong> {campaignId}</p>
+            <p><strong>Creatives:</strong> {files.length}</p>
+            <p><strong>Valid CTURLs:</strong> {validCount}</p>
+            {invalidCount > 0 && <p style={{ color: "#e53935" }}>⚠️ {invalidCount} CTURL(s) not valid</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowSummary(false)}>Cancel</Button>
+            <Button onClick={confirmExport}>Export Now</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
