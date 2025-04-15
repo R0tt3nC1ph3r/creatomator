@@ -48,7 +48,7 @@ export default function CampaignForm() {
       url.searchParams.set("utm_medium", "Display");
       url.searchParams.set("utm_campaign", campaignId);
       if (!removeTerm) {
-        url.search += (url.search ? "&" : "?") + "utm_term=%%TTDCAMPAIGNID%%";
+        url.search += (url.search ? "&" : "?") + "utm_term=%%TTD_CAMPAIGNID%%";
       }
       return url.toString();
     } catch {
@@ -167,7 +167,7 @@ export default function CampaignForm() {
         <div className="flex items-center gap-3">
           <Checkbox checked={removeTermGlobal} onCheckedChange={toggleRemoveTermGlobal} />
           <span className="text-sm font-medium text-yellow-800">
-            Remove <code className="bg-yellow-100 px-1 rounded">utm_term=%%TTDCAMPAIGNID%%</code> from all CTURLs
+            Remove <code className="bg-yellow-100 px-1 rounded">utm_term=%%TTD_CAMPAIGNID%%</code> from all CTURLs
           </span>
         </div>
 
