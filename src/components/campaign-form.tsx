@@ -24,11 +24,11 @@ interface CTURLData {
 export default function CampaignForm() {
   const [campaignId, setCampaignId] = useState("");
   const [landingPage, setLandingPage] = useState("");
+  const [clientCTURL, setClientCTURL] = useState("");
+  const [useClientCTURL, setUseClientCTURL] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [cturls, setCturls] = useState<CTURLData[]>([]);
   const [removeTermGlobal, setRemoveTermGlobal] = useState(false);
-  const [useCustomCTURL, setUseCustomCTURL] = useState(false);
-  const [customCTURL, setCustomCTURL] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
 
@@ -61,7 +61,7 @@ export default function CampaignForm() {
   const validateUrls = async (filesList: File[], useRemoveTerm: boolean) => {
     const updated = await Promise.all(
       filesList.map(async () => {
-        const url = useCustomCTURL ? customCTURL : buildCTURL(landingPage, campaignId, useRemoveTerm);
+        const url = useClientCTURL ? clientCTURL : buildCTURL(landingPage, campaignId, useRemoveTerm);
         try {
           await fetch(url, { method: "HEAD", mode: "no-cors" });
           return { url, valid: true, removeTerm: useRemoveTerm };
@@ -100,8 +100,14 @@ export default function CampaignForm() {
     await validateUrls(files, newRemove);
   };
 
+  const toggleUseClientCTURL = async () => {
+    const newValue = !useClientCTURL;
+    setUseClientCTURL(newValue);
+    await validateUrls(files, removeTermGlobal);
+  };
+
   const handleExport = () => {
-    if (!files.length || !campaignId || !landingPage || !templateFile || (useCustomCTURL && !customCTURL)) {
+    if (!files.length || !campaignId || !landingPage || !templateFile) {
       alert("Please complete all fields and upload files/template.");
       return;
     }
@@ -148,24 +154,22 @@ export default function CampaignForm() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Checkbox checked={useCustomCTURL} onCheckedChange={() => setUseCustomCTURL(!useCustomCTURL)} />
-          <span className="text-sm font-medium text-blue-800">
-            Use client-provided full CTURL
-          </span>
+        <div>
+          <Label className="text-gray-600">Client-Provided CTURL (Optional)</Label>
+          <Input
+            className="mt-1 bg-white shadow-sm rounded-md"
+            value={clientCTURL}
+            onChange={(e) => setClientCTURL(e.target.value)}
+            placeholder="https://example.com/?utm_source=..."
+          />
         </div>
 
-        {useCustomCTURL && (
-          <div>
-            <Label className="text-gray-600">Custom CTURL</Label>
-            <Input
-              className="mt-1 bg-white shadow-sm rounded-md"
-              value={customCTURL}
-              onChange={(e) => setCustomCTURL(e.target.value)}
-              placeholder="https://example.com?utm_source=..."
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <Checkbox checked={useClientCTURL} onCheckedChange={toggleUseClientCTURL} />
+          <span className="text-sm font-medium text-gray-800">
+            Use client-provided CTURL instead of auto-generated one
+          </span>
+        </div>
 
         <div>
           <Label className="text-gray-600">Upload Creatives</Label>
